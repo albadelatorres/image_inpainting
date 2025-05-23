@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <link rel="stylesheet" href="{{ url_for('static', filename='estilo.css') }}">
+  <meta charset="utf-8">
+  <title>HTML</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+    <form method="POST" enctype="multipart/form-data">
+        <input type="file" name="image" accept="image/*">
+        <p>o selecciona una imagen de ejemplo:</p>
+        <div id="carousel">
+            <button type="button" id="prev">&lt;</button>
+            <div id="carousel-window">
+              <div id="carousel-track">
+                  {% for img in images %}
+                      <img src="{{ url_for('static', filename='images/' ~ img) }}"
+                           alt="{{ img }}"
+                           class="carousel-item"
+                           onclick="selectImage('{{ img }}', this)">
+                  {% endfor %}
+              </div>
+            </div>
+            <button type="button" id="next">&gt;</button>
+        </div>
+        <input type="hidden" name="sample_image" id="sample_image">
+        <select name="estilo">
+            <option value="impresionistas">Impresionistas</option>
+            <option value="arte-abstracto">Arte abstracto</option>
+            <option value="iconografia">Iconografía</option>
+        </select>
+        <button type="submit">Subir</button>
+    </form>
+{% if output_path %}
+  <h2>Reconstrucción completada para {{ estilo }}</h2>
+  <img src="{{ output_path }}" alt="Imagen reconstruida" style="max-width: 512px;"><br>
+  <p><strong>Diferencia MSE:</strong> {{ mse_val | round(4) }}</p>
+  <p><strong>Similitud SSIM:</strong> {{ ssim_val | round(4) }}</p>
+{% endif %}
+<script>
+  const windowEl = document.getElementById('carousel-window');
+  const track = document.getElementById('carousel-track');
+  const prev  = document.getElementById('prev');
+  const next  = document.getElementById('next');
+  let index   = 0;
+
+  function updateCarousel(){
+    const firstItem = track.querySelector('.carousel-item');
+    if(!firstItem) return;
+    const itemWidth = firstItem.clientWidth;
+    const visible   = Math.floor(windowEl.clientWidth / itemWidth);
+    const maxIndex  = track.children.length - visible;
+    index = Math.max(0, Math.min(index, maxIndex));
+    track.style.transform = `translateX(${-index * itemWidth}px)`;
+  }
+
+  prev.addEventListener('click', () => {
+    index--;
+    updateCarousel();
+  });
+
+  next.addEventListener('click', () => {
+    index++;
+    updateCarousel();
+  });
+
+  /* Marca la imagen seleccionada y pasa el nombre al <input hidden> */
+  function selectImage(imgName, imgElement){
+    document.getElementById('sample_image').value = imgName;
+    document.querySelectorAll('.carousel-item').forEach(el => el.classList.remove('selected'));
+    imgElement.classList.add('selected');
+  }
+  /* Hacemos accesible selectImage desde el HTML inline */
+  window.selectImage = selectImage;
+  window.addEventListener('load', updateCarousel);
+</script>
+</body>
+</html>

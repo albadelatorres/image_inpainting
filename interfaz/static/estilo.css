@@ -1,0 +1,29 @@
+#carousel{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    margin:10px 0;
+  }
+  #carousel-window{
+    overflow:hidden;
+    width:512px;            /* misma ventana que antes */
+  }
+  #carousel-track{
+    display:flex;
+    width:max-content;
+    transition:transform 0.35s ease;   /* animación suave */
+  }
+  .carousel-item{
+    flex:0 0 auto;          /* que no se encogan con flexbox */
+    width:128px;
+    height:128px;
+    object-fit:cover;
+    cursor:pointer;
+    opacity:0.6;
+    transition:opacity 0.2s;
+  }
+  .carousel-item.selected,
+  .carousel-item:hover{
+    opacity:1;
+    border:2px solid #2196F3;
+  }
