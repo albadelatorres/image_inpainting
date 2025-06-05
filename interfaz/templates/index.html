@@ -30,6 +30,7 @@
             <option value="impresionistas">Impresionistas</option>
             <option value="arte-abstracto">Arte abstracto</option>
             <option value="iconografia">Iconografía</option>
+            <option value="ICT">Modelo ICT</option>
         </select>
         <button type="submit">Subir</button>
     </form>
@@ -38,6 +39,10 @@
   <img src="{{ output_path }}" alt="Imagen reconstruida" style="max-width: 512px;"><br>
   <p><strong>Diferencia MSE:</strong> {{ mse_val | round(4) }}</p>
   <p><strong>Similitud SSIM:</strong> {{ ssim_val | round(4) }}</p>
+  <p><strong>Numero de similitudes detectadas por ORB:</strong> {{ orb_val }}</p>
+  <p><strong>Similitud FSIM:</strong> {{ fsim_val | round(4) }}</p>
+  <p><strong>Similitud LPIPS:</strong> {{ lpips_val | round(4) }}</p>
+  <p><strong>Similitud DISTS:</strong> {{ dists_val | round(4) }}</p>
 {% endif %}
 <script>
   const windowEl = document.getElementById('carousel-window');
