@@ -10,13 +10,13 @@ para evaluar el rendimiento del modelo.
 <img width="826" alt="Captura de pantalla 2025-06-19 a las 21 56 52" src="https://github.com/user-attachments/assets/2b5ee583-8044-48c8-a537-0fc84e68d43c" />
 
 
-##**📂 Contenido del repositorio**
+##📂 Contenido del repositorio
 GAN.py
 /interfaz
 cohenswilcoxon.py
 create-mask.py
 
-##**🚀 Cómo ejecutar**
+##🚀 Cómo ejecutar
 
 Para entrenar el modelo GAN:
 
