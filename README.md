@@ -1,5 +1,6 @@
-Este repositorio contiene el trabajo de fin de grado de Alba de la Torre, con odo el código y scripts necesarios para entrenar, 
+Este repositorio contiene el trabajo de fin de grado de Alba de la Torre, con todo el código y scripts necesarios para entrenar, 
 evaluar y probar una red generativa adversarial (GAN) orientada a la reconstrucción digital de obras de arte dañadas. 
+
 Incluye además una interfaz web para facilitar su uso, un generador de daños sintéticos basado en ruido Perlin y scripts de análisis estadístico 
 para evaluar el rendimiento del modelo.
 
