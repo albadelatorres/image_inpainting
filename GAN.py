@@ -1,7 +1,13 @@
+"""
+Script de python para el entrenamiento del modelo GAN final definido en 
+la memoria.
+Uso: python GAN.py
+"""
+
 import os
 import tensorflow as tf
-from keras import layers, Model
-from keras.layers import Conv2D, MaxPooling2D, UpSampling2D, concatenate
+from keras import layers, Model, regularizers
+from keras.layers import Conv2D, MaxPooling2D, UpSampling2D, concatenate, Dropout
 from keras.optimizers import AdamW
 import numpy as np
 import matplotlib.pyplot as plt
@@ -75,6 +81,11 @@ def create_dataset_with_augmentation(damaged_dir, original_dir, batch_size=4):
 # Autoencoder (Generador) #
 ###########################
 
+# c indica convolution layer
+# p indica pooling layer
+# u indica upsampling
+# m indica skip-connection
+
 def build_autoencoder(input_shape=(512, 512, 3)):
     # input shape 512x512 y 3 canales (RGB)
     input_img = layers.Input(shape=input_shape)
@@ -133,9 +144,9 @@ def build_autoencoder(input_shape=(512, 512, 3)):
     d7 = Conv2D(32, (3,3), activation='relu', padding='same')(u7)
     m7 = concatenate([d7, c1])
 
-    decoded = Conv2D(3, (3,3), activation='sigmoid', padding='same')(m7)
+    output_img = Conv2D(3, (3,3), activation='sigmoid', padding='same')(m7)
 
-    return Model(input_img, decoded)
+    return Model(input_img, output_img)
 
 ############################
 # Discriminador (PatchGAN) #
@@ -144,47 +155,51 @@ def build_autoencoder(input_shape=(512, 512, 3)):
 def build_discriminator(input_shape=(512,512,3)):
     
     # input shape 512x512 y 3 canales (RGB)    
-    inp = layers.Input(shape=input_shape)
+    input_img = layers.Input(shape=input_shape)
 
-    x = layers.Conv2D(64, (4,4), strides=2, padding='same')(inp) #512x512x3 -> 256x256x64
+    x = layers.Conv2D(64, (4,4), strides=2, padding='same', kernel_regularizer=regularizers.l2(1e-4))(input_img) #512x512x3 -> 256x256x64
     x = layers.LeakyReLU(alpha=0.2)(x)
+    x = Dropout(0.5)(x)
 
-    x = layers.Conv2D(128, (4,4), strides=2, padding='same')(x) # 256x256x64 -> 128x128x128
+    x = layers.Conv2D(128, (4,4), strides=2, padding='same', kernel_regularizer=regularizers.l2(1e-4))(x) # 256x256x64 -> 128x128x128
     x = layers.LeakyReLU(alpha=0.2)(x)
+    x = Dropout(0.5)(x)
 
-    x = layers.Conv2D(256, (4,4), strides=2, padding='same')(x) # 128x128x128 -> 64x64x256
+    x = layers.Conv2D(256, (4,4), strides=2, padding='same', kernel_regularizer=regularizers.l2(1e-4))(x) # 128x128x128 -> 64x64x256
     x = layers.LeakyReLU(alpha=0.2)(x)
+    x = Dropout(0.5)(x)
 
-    x = layers.Conv2D(1, (4,4), strides=1, padding='same', activation='sigmoid')(x) # usamos sigmoid para convertir la salida a valores [0,1]
+    output_img = layers.Conv2D(1, (4,4), strides=1, padding='same', activation='sigmoid')(x) # usamos sigmoid para convertir la salida a valores [0,1]
 
-    return Model(inp, x)
+    return Model(input_img, output_img)
 
-#######################################
-# Entrenamiento GAN manual
-#######################################
+#############################
+# Loop de entrenamiento GAN #
+#############################
 
 def gan_train_loop(generator, discriminator, train_dataset, epochs=10, recon_weight=10.0):
     
     # Definimos optimizadores para el discriminador y generador
-    d_opt = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
+    d_opt = tf.keras.optimizers.Adam(learning_rate=2e-4, beta_1=0.5)
     g_opt = tf.keras.optimizers.Adam(learning_rate=2e-4, beta_1=0.5)
     
     # Definimos la función loss BCE
     bce = tf.keras.losses.BinaryCrossentropy(from_logits=False)
     
-    # Listas para guardar los loss
+    # Listas para guardar los loss y accuracy
     d_loss_list = []
     g_loss_list = []
+    acc_list = []
 
     for epoch in range(epochs):
         epoch_d_loss = 0.0
         epoch_g_loss = 0.0
+        epoch_acc = 0.0
         steps=0
         
         # Iteramos sobre la tupla y el contador de step con enumerate
         for step, (damaged_imgs, real_imgs) in enumerate(train_dataset):
             steps+=1
-            batch_size = tf.shape(damaged_imgs)[0]
 
             # Paso 1: entrenar discriminador
             # Usamos GradientTape para poder calcular los gradientes
@@ -199,10 +214,11 @@ def gan_train_loop(generator, discriminator, train_dataset, epochs=10, recon_wei
                 fake_pred = discriminator(fake_imgs, training=True) # Predicción del discriminador para una imagen falsa (debería acercarse a 0)
                 fake_loss = bce(tf.zeros_like(fake_pred), fake_pred) # Loss de la predicción: comparamos con un tensor de 0
 
-                # Accuracy del discriminador: queremos ≈ 0.5 en entrenamiento estable
+                # Monitorizamos accuracy del discriminador: queremos aprox 0.5 en entrenamiento estable
                 real_correct = tf.cast(real_pred > 0.5, tf.float32)   # 1 si clasifica real correctamente
                 fake_correct = tf.cast(fake_pred <= 0.5, tf.float32)  # 1 si clasifica fake correctamente
                 acc = 0.5 * (tf.reduce_mean(real_correct) + tf.reduce_mean(fake_correct))
+                epoch_acc += acc
 
                 d_loss = 0.5 * (real_loss + fake_loss) # Promediamos el loss de la imagen real y el loss de la imagen falsa
                 epoch_d_loss+=d_loss
@@ -219,11 +235,12 @@ def gan_train_loop(generator, discriminator, train_dataset, epochs=10, recon_wei
                 # Pérdida adversarial: queremos que el discriminador diga "1" a fakes
                 adv_loss = bce(tf.ones_like(fake_pred), fake_pred)
                 
-                #recon_loss = tf.reduce_mean(tf.abs(fake_imgs - real_imgs))
                 # Pérdida de reconstrucción con SSIM (0 = perfecta, 1 = peor)
                 ssim_vals    = tf.image.ssim(real_imgs, fake_imgs, max_val=1.0)
                 recon_loss   = (1.0 - ssim_vals) / 2.0 
-                recon_loss   = tf.reduce_mean(recon_loss)  # escalar medio por batch
+                # El generador saca un tensor tamaño (2, 512, 512, 3), por lo que recon_loss es (2, recon_loss) 
+                # Necesitamos la media de ambas imágenes
+                recon_loss   = tf.reduce_mean(recon_loss)
 
                 # Calculamos el loss dándole recon_weight = 10 "importancia" a la reconstrucción frente a engañar al discriminador
                 g_loss = adv_loss + recon_weight * recon_loss
@@ -237,17 +254,21 @@ def gan_train_loop(generator, discriminator, train_dataset, epochs=10, recon_wei
                 print(f"[Epoch {epoch}/{epochs}] [Step {step}] d_loss={d_loss.numpy():.4f} g_loss={g_loss.numpy():.4f} (adv={adv_loss.numpy():.4f}, rec={recon_loss.numpy():.4f}, acc={acc.numpy():.4f})")
         epoch_d_loss = epoch_d_loss/steps
         epoch_g_loss = epoch_g_loss/steps
+        epoch_acc = epoch_acc/steps
         d_loss_list.append(epoch_d_loss)
         g_loss_list.append(epoch_g_loss)
+        acc_list.append(epoch_acc)
         # Fin epoch
         print(f"--- Fin de epoch {epoch}, avg d_loss={epoch_d_loss.numpy():.4f}, avg g_loss={epoch_g_loss.numpy():.4f} ---")
-    return d_loss_list, g_loss_list
+    return d_loss_list, g_loss_list, acc_list
 
-#######################################
-# Visualización de los resultados
-#######################################
+###################################
+# Visualización de los resultados #
+###################################
 
 def plot_results(generator, dataset, n=2, epoch=None):
+    
+    # damaged_batch y real_batch contienen dos imágenes
     for damaged_batch, real_batch in dataset.take(1):
         fake_batch = generator(damaged_batch, training=False)
         fake_batch = tf.clip_by_value(fake_batch, 0.0, 1.0)
@@ -300,11 +321,11 @@ def main():
     train_dataset = train_dataset.take(1000)
     
     # Entrenamiento GAN
-    g_list, d_list = gan_train_loop(
+    g_list, d_list, acc_list = gan_train_loop(
         generator=generator,
         discriminator=discriminator,
         train_dataset=train_dataset,
-        epochs=120,
+        epochs=40,
         recon_weight=10.0
     )
     
@@ -315,14 +336,15 @@ def main():
     plt.figure(figsize=(10, 5))
     plt.plot(g_list, label="Generator Loss")
     plt.plot(d_list, label="Discriminator Loss")
+    plt.plot(acc_list, label="Accuracy", color='green')
     plt.xlabel("Epochs")
-    plt.ylabel("Loss")
+    plt.ylabel("Loss / Accuracy")
     plt.title("Training Losses")
     plt.legend()
     plt.show()
 
-    # Guardar generador (autoencoder) final
-    generator.save("gan_impresionistas.h5")
+    # Guardar la parte del generador (autoencoder) final
+    generator.save("gan_impresionistas.keras")
 
 if __name__ == "__main__":
     main() 
