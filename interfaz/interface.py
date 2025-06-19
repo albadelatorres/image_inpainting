@@ -1,8 +1,14 @@
+"""
+Script para lanzar interfaz del GAN
+Uso: python interface.py
+"""
+
 from flask import Flask, request, render_template
 from keras.models import load_model
 import numpy as np
 import cv2
 import os
+import csv
 from skimage.metrics import structural_similarity as ssim
 from sklearn.metrics import mean_squared_error
 import torch
@@ -10,6 +16,10 @@ import piq
 
 
 app = Flask(__name__)
+
+# Constantes
+CSV_PATH = "resultados_inferencia.csv"
+FIELDNAMES = ["Modelo", "Imagen", "MSE", "SSIM", "ORB", "FSIM", "LPIPS", "DISTS"]
 
 def run_cmd(command):
     try:
@@ -25,31 +35,29 @@ def calculate_ssim(img1, img2):
     return ssim(img1, img2, channel_axis=2)
 
 def calculate_orb(img1, img2):
-    # Convert to grayscale
+    # Convertir a escala de grises
     img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
     img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
 
-    # Initialize ORB detector
+    # Inicializar ORB detector
     orb = cv2.ORB_create()
 
-    # Find the keypoints and descriptors with ORB
+    # Encontrar keypoints y descriptors con ORB
     kpA, desA = orb.detectAndCompute(img1, None)
     kpB, desB = orb.detectAndCompute(img2, None)
 
-    # Match descriptors
+    # Matching
     bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
     matches = bf.match(desA, desB)
     
-    # Sort matches by distance
+    # Ordenar matches por distancia
     matches = sorted(matches, key=lambda x: x.distance)
     
     return len(matches), matches
 
+# FSIM con PIQ (valor en [0,1]) usando imágenes RGB normalizadas.
 def calculate_fsim(img1_bgr, img2_bgr):
-    """
-    FSIM con PIQ (valor en [0,1]) usando imágenes RGB normalizadas.
-    Evitamos la aserción manteniendo 3 canales.
-    """
+
     rgb1 = cv2.cvtColor(img1_bgr, cv2.COLOR_BGR2RGB)
     rgb2 = cv2.cvtColor(img2_bgr, cv2.COLOR_BGR2RGB)
     t1 = torch.from_numpy(rgb1).permute(2, 0, 1).unsqueeze(0).float() / 255.0  # [1,3,H,W]
@@ -58,11 +66,8 @@ def calculate_fsim(img1_bgr, img2_bgr):
         value = piq.fsim(t1, t2, data_range=1.0)  # chromatic=True por defecto
     return value.item()
 
-# --- New helper functions for LPIPS and DISTS ---
+# LPIPS: distancia perceptual (menos = mejor).  Utiliza implementación funcional de PIQ (red VGG por defecto).
 def calculate_lpips(img1_bgr, img2_bgr):
-    """
-    LPIPS distancia perceptual (↓ mejor).  Utiliza implementación funcional de PIQ (red VGG por defecto).
-    """
     rgb1 = cv2.cvtColor(img1_bgr, cv2.COLOR_BGR2RGB)
     rgb2 = cv2.cvtColor(img2_bgr, cv2.COLOR_BGR2RGB)
     t1 = torch.from_numpy(rgb1).permute(2, 0, 1).unsqueeze(0).float() / 255.0  # [1,3,H,W]
@@ -70,14 +75,10 @@ def calculate_lpips(img1_bgr, img2_bgr):
     with torch.no_grad():
         lpips_metric = piq.LPIPS()
         value = lpips_metric(t1,t2)
-        #value = lpips_metric(t1, t2)
     return value.item()
 
-
+# DISTS: Deep Image Structure and Texture Similarity (menos = mejor).
 def calculate_dists(img1_bgr, img2_bgr):
-    """
-    DISTS: Deep Image Structure and Texture Similarity (↓ mejor).
-    """
     rgb1 = cv2.cvtColor(img1_bgr, cv2.COLOR_BGR2RGB)
     rgb2 = cv2.cvtColor(img2_bgr, cv2.COLOR_BGR2RGB)
     t1 = torch.from_numpy(rgb1).permute(2, 0, 1).unsqueeze(0).float() / 255.0
@@ -157,6 +158,24 @@ def index():
             fsim_val = calculate_fsim(original_uint8, reconstructed_img)
             lpips_val = calculate_lpips(original_uint8, reconstructed_img)
             dists_val = calculate_dists(original_uint8, reconstructed_img)
+
+            # ---- Log metrics to CSV ----
+            row = {
+                "Modelo": estilo,
+                "Imagen": sample_name,
+                "MSE":   mse_val,
+                "SSIM":  ssim_val,
+                "ORB":   orb_len,
+                "FSIM":  fsim_val,
+                "LPIPS": lpips_val,
+                "DISTS": dists_val,
+            }
+            write_header = not os.path.exists(CSV_PATH)
+            with open(CSV_PATH, "a", newline="") as f:
+                writer = csv.DictWriter(f, FIELDNAMES)
+                if write_header:
+                    writer.writeheader()
+                writer.writerow(row)
 
         # Guardamos el resultado
         output_path = "static/output.png"

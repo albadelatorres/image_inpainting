@@ -10,7 +10,7 @@
 <body>
     <form method="POST" enctype="multipart/form-data">
         <input type="file" name="image" accept="image/*">
-        <p>o selecciona una imagen de ejemplo:</p>
+        <p>Selecciona una imagen de ejemplo:</p>
         <div id="carousel">
             <button type="button" id="prev">&lt;</button>
             <div id="carousel-window">
@@ -30,7 +30,6 @@
             <option value="impresionistas">Impresionistas</option>
             <option value="arte-abstracto">Arte abstracto</option>
             <option value="iconografia">Iconografía</option>
-            <option value="ICT">Modelo ICT</option>
         </select>
         <button type="submit">Subir</button>
     </form>
@@ -71,13 +70,11 @@
     updateCarousel();
   });
 
-  /* Marca la imagen seleccionada y pasa el nombre al <input hidden> */
   function selectImage(imgName, imgElement){
     document.getElementById('sample_image').value = imgName;
     document.querySelectorAll('.carousel-item').forEach(el => el.classList.remove('selected'));
     imgElement.classList.add('selected');
   }
-  /* Hacemos accesible selectImage desde el HTML inline */
   window.selectImage = selectImage;
   window.addEventListener('load', updateCarousel);
 </script>
