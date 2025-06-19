@@ -11,10 +11,13 @@ para evaluar el rendimiento del modelo.
 
 
 ## 📂 Contenido del repositorio
-GAN.py
-/interfaz
-cohenswilcoxon.py
-create-mask.py
+GAN.py: Modelo diseñado, los resultados se muestran en las imágenes de arriba.
+
+/interfaz: Interfaz basada en flask para realizar la inferencia del modelo entrenado, el modelo entrenado ya se incluye.
+
+cohenswilcoxon.py: Script de evaluación estadística.
+
+create-mask.py: Generación de dataset para entrenar el modelo.
 
 ## 🚀 Cómo ejecutar
 
@@ -36,7 +39,7 @@ Para poner en marcha la interfaz:
 python interface.py
 ```
 
-**📊 Scripts de evaluación incluidos**
+**📊 Evaluaciones estadísticas realizadas en el trabajo**
 - Wilcoxon signed-rank test: evalúa diferencias significativas entre imágenes originales y reconstruidas.
 - Cohen’s d: estima el tamaño del efecto de la reconstrucción sobre la imagen dañada.
 
