@@ -1,82 +1,446 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <link rel="stylesheet" href="{{ url_for('static', filename='estilo.css') }}">
   <meta charset="utf-8">
-  <title>HTML</title>
+  <title>Transferencia de Estilo de Imagen</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+    }
+
+    .main-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2d3748;
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 40px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .form-section {
+      margin-bottom: 35px;
+    }
+
+    .form-section h3 {
+      color: #4a5568;
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    .file-input {
+      position: absolute;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .file-input-button {
+      background: linear-gradient(135deg, #4299e1, #3182ce);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(66, 153, 225, 0.3);
+    }
+
+    .file-input-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
+    }
+
+    .carousel-section p {
+      color: #4a5568;
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+
+    #carousel {
+      position: relative;
+      background: #f7fafc;
+      border-radius: 15px;
+      padding: 20px;
+      border: 2px solid #e2e8f0;
+      margin-bottom: 25px;
+    }
+
+    #carousel-window {
+      overflow: hidden;
+      border-radius: 12px;
+      background: white;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    #carousel-track {
+      display: flex;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      gap: 15px;
+      padding: 15px;
+    }
+
+    .carousel-item {
+      flex: 0 0 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 3px solid transparent;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .carousel-item:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .carousel-item.selected {
+      border-color: #4299e1;
+      transform: scale(1.05);
+      box-shadow: 0 0 0 4px rgba(66, 153, 225, 0.3);
+    }
+
+    .carousel-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: linear-gradient(135deg, #4299e1, #3182ce);
+      color: white;
+      border: none;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.2rem;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .carousel-btn:hover {
+      transform: translateY(-50%) scale(1.1);
+      box-shadow: 0 6px 16px rgba(66, 153, 225, 0.4);
+    }
+
+    #prev {
+      left: -15px;
+    }
+
+    #next {
+      right: -15px;
+    }
+
+    .style-select {
+      width: 100%;
+      padding: 15px 20px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 1rem;
+      background: white;
+      color: #4a5568;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 25px;
+    }
+
+    .style-select:focus {
+      outline: none;
+      border-color: #4299e1;
+      box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+    }
+
+    .submit-btn {
+      background: linear-gradient(135deg, #48bb78, #38a169);
+      color: white;
+      padding: 18px 40px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 100%;
+      box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
+    }
+
+    .results-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .results-card h2 {
+      color: #2d3748;
+      font-size: 1.8rem;
+      margin-bottom: 25px;
+      font-weight: 600;
+    }
+
+    .result-image {
+      max-width: 100%;
+      height: auto;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      margin-bottom: 30px;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 25px;
+    }
+
+    .metric-card {
+      background: linear-gradient(135deg, #f7fafc, #edf2f7);
+      padding: 20px;
+      border-radius: 12px;
+      border-left: 4px solid #4299e1;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .metric-label {
+      font-weight: 600;
+      color: #4a5568;
+      font-size: 0.9rem;
+      margin-bottom: 5px;
+    }
+
+    .metric-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #2d3748;
+    }
+
+    @media (max-width: 768px) {
+      .main-card {
+        padding: 25px;
+        margin: 10px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .carousel-item {
+        flex: 0 0 100px;
+        height: 100px;
+      }
+
+      .carousel-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+      }
+
+      #prev {
+        left: -10px;
+      }
+
+      #next {
+        right: -10px;
+      }
+    }
+  </style>
 </head>
 
 <body>
-    <form method="POST" enctype="multipart/form-data">
-        <input type="file" name="image" accept="image/*">
-        <p>Selecciona una imagen de ejemplo:</p>
-        <div id="carousel">
-            <button type="button" id="prev">&lt;</button>
+  <div class="container">
+    <div class="main-card">
+      <h1>🎨 Reconstrucción de Obras</h1>
+      
+      <form method="POST" enctype="multipart/form-data">
+        <div class="form-section">
+          <h3>📁 Subir tu imagen</h3>
+          <div class="file-input-wrapper">
+            <input type="file" name="image" accept="image/*" class="file-input">
+            <button type="button" class="file-input-button">
+              📎 Seleccionar archivo de imagen
+            </button>
+          </div>
+        </div>
+
+        <div class="form-section carousel-section">
+          <h3>🖼️ O selecciona una imagen de ejemplo:</h3>
+          <div id="carousel">
+            <button type="button" id="prev" class="carousel-btn">‹</button>
             <div id="carousel-window">
               <div id="carousel-track">
-                  {% for img in images %}
-                      <img src="{{ url_for('static', filename='images/' ~ img) }}"
-                           alt="{{ img }}"
-                           class="carousel-item"
-                           onclick="selectImage('{{ img }}', this)">
-                  {% endfor %}
+                {% for img in images %}
+                  <img src="{{ url_for('static', filename='images/' ~ img) }}"
+                       alt="{{ img }}"
+                       class="carousel-item"
+                       onclick="selectImage('{{ img }}', this)">
+                {% endfor %}
               </div>
             </div>
-            <button type="button" id="next">&gt;</button>
+            <button type="button" id="next" class="carousel-btn">›</button>
+          </div>
+          <input type="hidden" name="sample_image" id="sample_image">
         </div>
-        <input type="hidden" name="sample_image" id="sample_image">
-        <select name="estilo">
+
+        <div class="form-section">
+          <h3>Selecciona el estilo artístico:</h3>
+          <select name="estilo" class="style-select">
             <option value="impresionistas">Impresionistas</option>
-            <option value="arte-abstracto">Arte abstracto</option>
+            <option value="arte-abstracto">Arte Abstracto</option>
             <option value="iconografia">Iconografía</option>
-        </select>
-        <button type="submit">Subir</button>
-    </form>
-{% if output_path %}
-  <h2>Reconstrucción completada para {{ estilo }}</h2>
-  <img src="{{ output_path }}" alt="Imagen reconstruida" style="max-width: 512px;"><br>
-  <p><strong>Diferencia MSE:</strong> {{ mse_val | round(4) }}</p>
-  <p><strong>Similitud SSIM:</strong> {{ ssim_val | round(4) }}</p>
-  <p><strong>Numero de similitudes detectadas por ORB:</strong> {{ orb_val }}</p>
-  <p><strong>Similitud FSIM:</strong> {{ fsim_val | round(4) }}</p>
-  <p><strong>Similitud LPIPS:</strong> {{ lpips_val | round(4) }}</p>
-  <p><strong>Similitud DISTS:</strong> {{ dists_val | round(4) }}</p>
-{% endif %}
-<script>
-  const windowEl = document.getElementById('carousel-window');
-  const track = document.getElementById('carousel-track');
-  const prev  = document.getElementById('prev');
-  const next  = document.getElementById('next');
-  let index   = 0;
+          </select>
+        </div>
 
-  function updateCarousel(){
-    const firstItem = track.querySelector('.carousel-item');
-    if(!firstItem) return;
-    const itemWidth = firstItem.clientWidth;
-    const visible   = Math.floor(windowEl.clientWidth / itemWidth);
-    const maxIndex  = track.children.length - visible;
-    index = Math.max(0, Math.min(index, maxIndex));
-    track.style.transform = `translateX(${-index * itemWidth}px)`;
-  }
+        <button type="submit" class="submit-btn">
+          ✨ Aplicar Estilo
+        </button>
+      </form>
+    </div>
 
-  prev.addEventListener('click', () => {
-    index--;
-    updateCarousel();
-  });
+    {% if output_path %}
+    <div class="results-card">
+      <h2>🎉 Reconstrucción completada para {{ estilo }}</h2>
+      <img src="{{ output_path }}" alt="Imagen reconstruida" class="result-image">
+      
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Diferencia MSE</div>
+          <div class="metric-value">{{ mse_val | round(4) }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Similitud SSIM</div>
+          <div class="metric-value">{{ ssim_val | round(4) }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Similitudes ORB</div>
+          <div class="metric-value">{{ orb_val }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Similitud FSIM</div>
+          <div class="metric-value">{{ fsim_val | round(4) }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Similitud LPIPS</div>
+          <div class="metric-value">{{ lpips_val | round(4) }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Similitud DISTS</div>
+          <div class="metric-value">{{ dists_val | round(4) }}</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
 
-  next.addEventListener('click', () => {
-    index++;
-    updateCarousel();
-  });
+  <script>
+    const windowEl = document.getElementById('carousel-window');
+    const track = document.getElementById('carousel-track');
+    const prev = document.getElementById('prev');
+    const next = document.getElementById('next');
+    let index = 0;
 
-  function selectImage(imgName, imgElement){
-    document.getElementById('sample_image').value = imgName;
-    document.querySelectorAll('.carousel-item').forEach(el => el.classList.remove('selected'));
-    imgElement.classList.add('selected');
-  }
-  window.selectImage = selectImage;
-  window.addEventListener('load', updateCarousel);
-</script>
+    function updateCarousel() {
+      const firstItem = track.querySelector('.carousel-item');
+      if (!firstItem) return;
+      const itemWidth = firstItem.clientWidth + 15; // Include gap
+      const visible = Math.floor(windowEl.clientWidth / itemWidth);
+      const maxIndex = Math.max(0, track.children.length - visible);
+      index = Math.max(0, Math.min(index, maxIndex));
+      track.style.transform = `translateX(${-index * itemWidth}px)`;
+    }
+
+    prev.addEventListener('click', () => {
+      index--;
+      updateCarousel();
+    });
+
+    next.addEventListener('click', () => {
+      index++;
+      updateCarousel();
+    });
+
+    function selectImage(imgName, imgElement) {
+      document.getElementById('sample_image').value = imgName;
+      document.querySelectorAll('.carousel-item').forEach(el => el.classList.remove('selected'));
+      imgElement.classList.add('selected');
+    }
+
+    // Make selectImage accessible from inline HTML
+    window.selectImage = selectImage;
+    
+    // Initialize carousel on load and resize
+    window.addEventListener('load', updateCarousel);
+    window.addEventListener('resize', updateCarousel);
+
+    // Update file input label when file is selected
+    const fileInput = document.querySelector('.file-input');
+    const fileButton = document.querySelector('.file-input-button');
+    
+    fileInput.addEventListener('change', function(e) {
+      if (e.target.files.length > 0) {
+        fileButton.innerHTML = '✅ ' + e.target.files[0].name;
+        fileButton.style.background = 'linear-gradient(135deg, #48bb78, #38a169)';
+      } else {
+        fileButton.innerHTML = '📎 Seleccionar archivo de imagen';
+        fileButton.style.background = 'linear-gradient(135deg, #4299e1, #3182ce)';
+      }
+    });
+  </script>
 </body>
 </html>
